@@ -1,0 +1,14 @@
+{
+    "required": true,
+    "minVersion": "0.8",
+    "package": "com.shinoroi.mixin",
+    "compatibilityLevel": "JAVA_21",
+    "client": [
+        "MixinCamera"
+    ],
+    "server": [],
+    "mixins": [],
+    "injectors": {
+        "defaultRequire": 1
+    }
+}

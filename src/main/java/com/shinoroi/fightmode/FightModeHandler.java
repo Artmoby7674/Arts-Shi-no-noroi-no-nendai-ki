@@ -9,8 +9,6 @@ import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
-import net.neoforged.neoforge.event.entity.player.EntityItemPickupEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 
@@ -75,15 +73,7 @@ public class FightModeHandler {
         event.setCanceled(true);
     }
 
-    // ── Item pickup ───────────────────────────────────────────────────────────
-
-    @SubscribeEvent
-    public static void onItemPickup(EntityItemPickupEvent event) {
-        Player player = event.getEntity();
-        if (!isFightMode(player)) return;
-
-        event.setCanceled(true);
-    }
+    // ── Item pickup — handled in MixinItemEntity.playerTouch() ───────────────
 
     // ── Block breaking enforcement (server) ───────────────────────────────────
 

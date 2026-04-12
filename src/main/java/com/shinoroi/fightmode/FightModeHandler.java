@@ -36,7 +36,7 @@ public class FightModeHandler {
 
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
-        if (!(event.getPlayer() instanceof ServerPlayer player)) return;
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
 
         PlayerData data = player.getData(ModAttachments.PLAYER_DATA.get());
 

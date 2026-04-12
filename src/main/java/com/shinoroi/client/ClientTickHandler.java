@@ -38,7 +38,7 @@ public class ClientTickHandler {
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
-        if (player == null || mc.isPaused() || event.getPlayer() != player) return;
+        if (player == null || mc.isPaused() || event.getEntity() != player) return;
 
         // ── 1. Toggle key ─────────────────────────────────────────────────────
         while (ModKeybinds.TOGGLE_FIGHT_MODE.consumeClick()) {

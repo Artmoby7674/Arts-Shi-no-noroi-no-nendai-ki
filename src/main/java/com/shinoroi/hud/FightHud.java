@@ -3,6 +3,7 @@ package com.shinoroi.hud;
 import com.shinoroi.ShinoRoi;
 import com.shinoroi.core.ModAttachments;
 import com.shinoroi.data.PlayerData;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
@@ -37,7 +38,7 @@ public class FightHud {
     private static final int COLOR_LABEL     = 0xFFFFFFFF;
     private static final int COLOR_INDICATOR = 0xFFFF3300;
 
-    public static void render(GuiGraphics graphics, float partialTick) {
+    public static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null || mc.screen != null) return;

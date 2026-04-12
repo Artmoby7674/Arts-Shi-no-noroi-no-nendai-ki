@@ -46,6 +46,8 @@ repositories {
 
 dependencies {
     implementation "net.neoforged:neoforge:${neo_version}"
+    // Generates shinoroi.refmap.json so @Shadow/@Inject resolve at runtime
+    annotationProcessor "org.spongepowered:mixin:0.8.5:processor"
 }
 
 tasks.withType(ProcessResources).configureEach {

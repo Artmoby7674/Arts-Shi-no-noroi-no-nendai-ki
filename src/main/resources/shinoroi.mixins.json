@@ -3,9 +3,8 @@
     "minVersion": "0.8",
     "package": "com.shinoroi.mixin",
     "compatibilityLevel": "JAVA_21",
-    "client": [
-        "MixinCamera"
-    ],
+    "refmap": "shinoroi.refmap.json",
+    "client": [],
     "server": [],
     "mixins": [
         "MixinItemEntity"

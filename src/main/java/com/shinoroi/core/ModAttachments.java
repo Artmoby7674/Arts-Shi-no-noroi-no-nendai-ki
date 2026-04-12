@@ -17,7 +17,7 @@ public class ModAttachments {
     public static final Supplier<AttachmentType<PlayerData>> PLAYER_DATA =
         ATTACHMENT_TYPES.register("player_data", () ->
             AttachmentType.builder(PlayerData::new)
-                .serialize(PlayerData.MAP_CODEC)
+                .serialize(PlayerData.CODEC)
                 .build()
         );
 }

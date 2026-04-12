@@ -1,6 +1,7 @@
 package com.shinoroi.data;
 
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
 
@@ -34,7 +35,7 @@ public class PlayerData {
         this.unlockedTechniques = new ArrayList<>(unlockedTechniques);
     }
 
-    public static final Codec<PlayerData> CODEC = RecordCodecBuilder.create(instance ->
+    public static final MapCodec<PlayerData> MAP_CODEC = RecordCodecBuilder.mapCodec(instance ->
         instance.group(
             Codec.FLOAT.fieldOf("energy").orElse(100f).forGetter(PlayerData::getEnergy),
             Codec.FLOAT.fieldOf("maxEnergy").orElse(100f).forGetter(PlayerData::getMaxEnergy),
@@ -44,8 +45,8 @@ public class PlayerData {
                 .fieldOf("cooldowns").orElseGet(HashMap::new).forGetter(PlayerData::getCooldowns),
             ResourceLocation.CODEC.listOf()
                 .fieldOf("techniques").orElseGet(ArrayList::new).forGetter(PlayerData::getUnlockedTechniques)
-        ).apply(instance, PlayerData::new)
-    );
+        ).apply(instance, PlayerData::new));
+    public static final Codec<PlayerData> CODEC = MAP_CODEC.codec();
 
     // ── Getters ─────────────────────────────────────────────────────────────
 

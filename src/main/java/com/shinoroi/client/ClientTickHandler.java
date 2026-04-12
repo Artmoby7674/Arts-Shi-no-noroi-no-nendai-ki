@@ -11,8 +11,8 @@ import net.minecraft.client.player.LocalPlayer;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
@@ -33,10 +33,10 @@ public class ClientTickHandler {
     private static CameraType cameraBeforeFightMode = null;
 
     @SubscribeEvent
-    public static void onClientTick(ClientTickEvent.Post event) {
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
-        if (player == null || mc.isPaused()) return;
+        if (player == null || mc.isPaused() || event.getPlayer() != player) return;
 
         // ── 1. Toggle key ─────────────────────────────────────────────────────
         while (ModKeybinds.TOGGLE_FIGHT_MODE.consumeClick()) {

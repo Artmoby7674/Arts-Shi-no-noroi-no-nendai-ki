@@ -4,12 +4,10 @@ import com.shinoroi.ShinoRoi;
 import com.shinoroi.data.PlayerData;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
-@EventBusSubscriber(modid = ShinoRoi.MODID, bus = EventBusSubscriber.Bus.MOD)
 public class ModNetwork {
 
     @SubscribeEvent

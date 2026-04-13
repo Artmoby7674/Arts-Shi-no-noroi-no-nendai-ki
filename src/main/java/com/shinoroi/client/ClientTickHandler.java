@@ -8,9 +8,7 @@ import com.shinoroi.network.ToggleFightModePacket;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -27,7 +25,6 @@ import net.neoforged.neoforge.network.PacketDistributor;
  *  - Block break speed reduction when holding a tool in fight mode (visual)
  *  - Consume technique keys (wired up when techniques are added)
  */
-@EventBusSubscriber(modid = ShinoRoi.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public class ClientTickHandler {
 
     /** Camera state tracked across ticks to detect transitions */

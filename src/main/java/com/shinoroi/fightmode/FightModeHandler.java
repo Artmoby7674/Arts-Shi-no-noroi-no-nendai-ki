@@ -1,13 +1,11 @@
 package com.shinoroi.fightmode;
 
-import com.shinoroi.ShinoRoi;
 import com.shinoroi.core.ModAttachments;
 import com.shinoroi.data.PlayerData;
 import com.shinoroi.network.ModNetwork;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.event.level.BlockEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
@@ -22,7 +20,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
  *  - Block breaking only with bare hand (tool in hand → cancel)
  *  - Passive energy regeneration (slower while fighting, faster while idle)
  */
-@EventBusSubscriber(modid = ShinoRoi.MODID, bus = EventBusSubscriber.Bus.GAME)
 public class FightModeHandler {
 
     /** Energy regen per tick while fight mode is ACTIVE  (0.2 / tick = 4 / sec) */

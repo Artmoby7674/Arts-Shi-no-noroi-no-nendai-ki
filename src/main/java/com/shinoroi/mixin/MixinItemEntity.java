@@ -19,7 +19,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(ItemEntity.class)
 public class MixinItemEntity {
 
-    @Inject(method = "playerTouch", at = @At("HEAD"), cancellable = true)
+    // remap = false: NeoForge 1.21+ uses Mojmap names at runtime, so "playerTouch"
+    // is already the final bytecode name. Telling the AP not to look up an
+    // obfuscation mapping prevents the "Unable to locate obfuscation mapping" error.
+    @Inject(method = "playerTouch", at = @At("HEAD"), cancellable = true, remap = false)
     private void shinoroi$blockPickupInFightMode(Player player, CallbackInfo ci) {
         // playerTouch is called server-side; guard just in case
         if (player.level().isClientSide()) return;

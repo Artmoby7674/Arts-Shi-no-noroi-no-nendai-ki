@@ -1,0 +1,17 @@
+{
+  "type": "SECRET",
+  "attackType": "RANGED",
+  "moveset": "shinoroi:cursed_blade",
+  "animationTrigger": "shinoroi:cursed_wave",
+  "baseDamage": 14.0,
+  "cooldownTicks": 0,
+  "ultBarCost": 30.0,
+  "skillPointCost": 4,
+  "range": 16.0,
+  "aoeRadius": 0.0,
+  "terrainDestructRadius": 2,
+  "displayName": "Cursed Wave",
+  "upgradeLevels": 2,
+  "damagePerLevel": 3.0,
+  "cooldownReductionPerLevel": 0
+}

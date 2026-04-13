@@ -1,0 +1,17 @@
+{
+  "type": "ULT",
+  "attackType": "AOE",
+  "moveset": "shinoroi:cursed_blade",
+  "animationTrigger": "shinoroi:domain_expansion",
+  "baseDamage": 40.0,
+  "cooldownTicks": 0,
+  "ultBarCost": 100.0,
+  "skillPointCost": 10,
+  "range": 20.0,
+  "aoeRadius": 20.0,
+  "terrainDestructRadius": 8,
+  "displayName": "Domain Expansion",
+  "upgradeLevels": 0,
+  "damagePerLevel": 0.0,
+  "cooldownReductionPerLevel": 0
+}

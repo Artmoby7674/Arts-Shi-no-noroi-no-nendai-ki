@@ -1,0 +1,12 @@
+{
+  "displayName": "Cursed Blade Style",
+  "fightModeHpBonus": 30.0,
+  "ultBarChargeRate": 1.0,
+  "techniques": [
+    "shinoroi:slash_forward",
+    "shinoroi:rising_slash",
+    "shinoroi:cursed_wave",
+    "shinoroi:cursed_eruption",
+    "shinoroi:domain_expansion"
+  ]
+}

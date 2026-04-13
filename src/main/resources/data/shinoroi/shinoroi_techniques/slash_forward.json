@@ -1,0 +1,17 @@
+{
+  "type": "NORMAL",
+  "attackType": "MELEE",
+  "moveset": "shinoroi:cursed_blade",
+  "animationTrigger": "shinoroi:slash_forward",
+  "baseDamage": 8.0,
+  "cooldownTicks": 40,
+  "ultBarCost": 0.0,
+  "skillPointCost": 2,
+  "range": 4.0,
+  "aoeRadius": 0.0,
+  "terrainDestructRadius": 0,
+  "displayName": "Forward Slash",
+  "upgradeLevels": 3,
+  "damagePerLevel": 2.0,
+  "cooldownReductionPerLevel": 5
+}

@@ -3,83 +3,164 @@ package com.shinoroi.client;
 import com.shinoroi.ShinoRoi;
 import com.shinoroi.core.ModAttachments;
 import com.shinoroi.core.ModKeybinds;
+import com.shinoroi.data.MovesetDefinition;
 import com.shinoroi.data.PlayerData;
+import com.shinoroi.hud.QteOverlay;
+import com.shinoroi.network.SelectSlotPacket;
+import com.shinoroi.network.TechniqueActivatePacket;
 import com.shinoroi.network.ToggleFightModePacket;
+import com.shinoroi.registry.MovesetRegistry;
 import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
-import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
+import org.lwjgl.glfw.GLFW;
 
 /**
- * Game-bus client-only tick handler.
+ * Game-bus client-only tick and input handler.
  *
  * Responsibilities:
- *  - Detect fight-mode toggle keybind and send packet to server
- *  - Watch for fight-mode state changes (from synced data) and
- *    switch the camera between first-person and third-person right-shoulder
- *  - Block break speed reduction when holding a tool in fight mode (visual)
- *  - Consume technique keys (wired up when techniques are added)
+ *  - Detect fight-mode toggle keybind -> send ToggleFightModePacket
+ *  - Camera switch on fight-mode transitions (first-person <-> third-person back)
+ *  - Prevent manual camera cycling while in fight mode
+ *  - Scroll wheel interception -> scroll through technique hotbar slots
+ *  - Left-click interception -> activate selected technique slot
+ *  - Arrow key interception -> forward QTE key press to QteOverlay / server
+ *  - Skill tree keybind -> open SkillTreeScreen
+ *  - Block render layers (hotbar / selected item name) while fight mode active
+ *  - Break-speed modifier (visual)
  */
-@EventBusSubscriber(modid = ShinoRoi.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
 public class ClientTickHandler {
 
-    /** Camera state tracked across ticks to detect transitions */
     private static boolean wasFightModeActive = false;
     private static CameraType cameraBeforeFightMode = null;
+
+    // -- Player tick ----------------------------------------------------------
 
     @SubscribeEvent
     public static void onPlayerTick(PlayerTickEvent.Post event) {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
-        if (player == null || mc.isPaused() || event.getPlayer() != player) return;
+        if (player == null || mc.isPaused() || event.getEntity() != player) return;
 
-        // ── 1. Toggle key ─────────────────────────────────────────────────────
+        // 1. Fight-mode toggle
         while (ModKeybinds.TOGGLE_FIGHT_MODE.consumeClick()) {
             PacketDistributor.sendToServer(new ToggleFightModePacket());
         }
 
-        // Technique keys — consumed now, wired to techniques when added
-        while (ModKeybinds.TECHNIQUE_1.consumeClick()) { /* TODO */ }
-        while (ModKeybinds.TECHNIQUE_2.consumeClick()) { /* TODO */ }
-        while (ModKeybinds.TECHNIQUE_3.consumeClick()) { /* TODO */ }
-        while (ModKeybinds.DOMAIN_EXPANSION.consumeClick()) { /* TODO */ }
+        // 2. Skill tree screen
+        while (ModKeybinds.OPEN_SKILL_TREE.consumeClick()) {
+            if (mc.screen == null) {
+                mc.setScreen(new SkillTreeScreen());
+            }
+        }
 
-        // ── 2. Camera switching on fight-mode transitions ─────────────────────
+        // 3. Camera on fight-mode transition
         PlayerData data = player.getData(ModAttachments.PLAYER_DATA.get());
         boolean fightModeNow = data.isFightModeActive();
 
         if (fightModeNow && !wasFightModeActive) {
-            // Entering fight mode → save camera and switch to third-person back
-            // The MixinCamera will apply the right-shoulder offset automatically.
             cameraBeforeFightMode = mc.options.getCameraType();
             mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
-            ShinoRoi.LOGGER.debug("[ShinoRoi] Fight mode ON — camera → THIRD_PERSON_BACK");
-
+            ShinoRoi.LOGGER.debug("[ShinoRoi] Fight mode ON -- camera -> THIRD_PERSON_BACK");
         } else if (!fightModeNow && wasFightModeActive) {
-            // Leaving fight mode → restore previous camera
             CameraType restore = (cameraBeforeFightMode != null)
                 ? cameraBeforeFightMode
                 : CameraType.FIRST_PERSON;
             mc.options.setCameraType(restore);
             cameraBeforeFightMode = null;
-            ShinoRoi.LOGGER.debug("[ShinoRoi] Fight mode OFF — camera restored to {}", restore);
+            ShinoRoi.LOGGER.debug("[ShinoRoi] Fight mode OFF -- camera restored to {}", restore);
         }
 
-        // While in fight mode, prevent the player from manually cycling away
-        // from third-person back (e.g. pressing F5).
+        // Lock camera to third-person while in fight mode
         if (fightModeNow && mc.options.getCameraType() != CameraType.THIRD_PERSON_BACK) {
             mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
         }
 
         wasFightModeActive = fightModeNow;
+
+        // 4. Left-click -> activate technique
+        if (fightModeNow && mc.screen == null) {
+            while (mc.options.keyAttack.consumeClick()) {
+                PacketDistributor.sendToServer(
+                    new TechniqueActivatePacket(data.getSelectedSlot()));
+            }
+        }
     }
 
-    // ── Break-speed modifier (client-side, for visual feedback) ───────────────
+    // -- Scroll wheel -> technique slot selection -----------------------------
+
+    @SubscribeEvent
+    public static void onMouseScroll(InputEvent.MouseScrollingEvent event) {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer player = mc.player;
+        if (player == null || mc.screen != null) return;
+
+        PlayerData data = player.getData(ModAttachments.PLAYER_DATA.get());
+        if (!data.isFightModeActive()) return;
+
+        // Suppress vanilla hotbar scroll
+        event.setCanceled(true);
+
+        int maxSlot = resolveMaxSlot(data);
+        if (maxSlot <= 0) return;
+
+        int current = data.getSelectedSlot();
+        // Scroll down (negative deltaY) = advance to next slot
+        int delta = (event.getScrollDeltaY() < 0) ? 1 : -1;
+        int next = ((current + delta) % (maxSlot + 1) + (maxSlot + 1)) % (maxSlot + 1);
+
+        data.setSelectedSlot(next);
+        player.setData(ModAttachments.PLAYER_DATA.get(), data);
+        PacketDistributor.sendToServer(new SelectSlotPacket(next));
+    }
+
+    // -- Arrow key input -> QTE -----------------------------------------------
+
+    @SubscribeEvent
+    public static void onKeyInput(InputEvent.Key event) {
+        if (!QteOverlay.isActive()) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen != null) return;
+        // Only fire on key press, not repeat or release
+        if (event.getAction() != GLFW.GLFW_PRESS) return;
+
+        int direction = -1;
+        switch (event.getKey()) {
+            case GLFW.GLFW_KEY_UP    -> direction = 0;
+            case GLFW.GLFW_KEY_DOWN  -> direction = 1;
+            case GLFW.GLFW_KEY_LEFT  -> direction = 2;
+            case GLFW.GLFW_KEY_RIGHT -> direction = 3;
+            default -> { return; }
+        }
+
+        QteOverlay.advanceIndex(direction);
+    }
+
+    // -- Suppress vanilla GUI layers ------------------------------------------
+
+    @SubscribeEvent
+    public static void onRenderGuiLayerPre(RenderGuiLayerEvent.Pre event) {
+        Minecraft mc = Minecraft.getInstance();
+        LocalPlayer player = mc.player;
+        if (player == null) return;
+
+        PlayerData data = player.getData(ModAttachments.PLAYER_DATA.get());
+        if (!data.isFightModeActive()) return;
+
+        if (event.getName().equals(VanillaGuiLayers.HOTBAR)
+                || event.getName().equals(VanillaGuiLayers.SELECTED_ITEM_NAME)) {
+            event.setCanceled(true);
+        }
+    }
+
+    // -- Break-speed modifier -------------------------------------------------
 
     @SubscribeEvent
     public static void onBreakSpeed(PlayerEvent.BreakSpeed event) {
@@ -87,11 +168,17 @@ public class ClientTickHandler {
         if (!data.isFightModeActive()) return;
 
         if (!event.getEntity().getMainHandItem().isEmpty()) {
-            // Tool in hand during fight mode — cancel break entirely
             event.setCanceled(true);
         } else {
-            // Bare-hand breaking is allowed but significantly slowed
             event.setNewSpeed(event.getOriginalSpeed() * 0.15f);
         }
+    }
+
+    // -- Helpers --------------------------------------------------------------
+
+    private static int resolveMaxSlot(PlayerData data) {
+        MovesetDefinition moveset = MovesetRegistry.INSTANCE.getByString(data.getActiveMovesetId());
+        if (moveset == null || moveset.techniques().isEmpty()) return 0;
+        return Math.min(moveset.techniques().size(), 9) - 1;
     }
 }

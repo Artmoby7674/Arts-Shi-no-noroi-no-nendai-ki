@@ -16,35 +16,11 @@ public class ModKeybinds {
         CATEGORY
     );
 
-    /** Z — technique slot 1 */
-    public static final KeyMapping TECHNIQUE_1 = new KeyMapping(
-        "key.shinoroi.technique_1",
+    /** K — open the skill tree screen */
+    public static final KeyMapping OPEN_SKILL_TREE = new KeyMapping(
+        "key.shinoroi.open_skill_tree",
         InputConstants.Type.KEYSYM,
-        GLFW.GLFW_KEY_Z,
-        CATEGORY
-    );
-
-    /** X — technique slot 2 */
-    public static final KeyMapping TECHNIQUE_2 = new KeyMapping(
-        "key.shinoroi.technique_2",
-        InputConstants.Type.KEYSYM,
-        GLFW.GLFW_KEY_X,
-        CATEGORY
-    );
-
-    /** C — technique slot 3 */
-    public static final KeyMapping TECHNIQUE_3 = new KeyMapping(
-        "key.shinoroi.technique_3",
-        InputConstants.Type.KEYSYM,
-        GLFW.GLFW_KEY_C,
-        CATEGORY
-    );
-
-    /** V — domain expansion / ultimate */
-    public static final KeyMapping DOMAIN_EXPANSION = new KeyMapping(
-        "key.shinoroi.domain_expansion",
-        InputConstants.Type.KEYSYM,
-        GLFW.GLFW_KEY_V,
+        GLFW.GLFW_KEY_K,
         CATEGORY
     );
 }

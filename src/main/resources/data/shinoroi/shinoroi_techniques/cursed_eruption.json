@@ -1,0 +1,17 @@
+{
+  "type": "SECRET",
+  "attackType": "AOE",
+  "moveset": "shinoroi:cursed_blade",
+  "animationTrigger": "shinoroi:cursed_eruption",
+  "baseDamage": 10.0,
+  "cooldownTicks": 0,
+  "ultBarCost": 40.0,
+  "skillPointCost": 5,
+  "range": 6.0,
+  "aoeRadius": 6.0,
+  "terrainDestructRadius": 3,
+  "displayName": "Cursed Eruption",
+  "upgradeLevels": 2,
+  "damagePerLevel": 2.5,
+  "cooldownReductionPerLevel": 0
+}

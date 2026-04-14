@@ -42,12 +42,12 @@ public class FightModeHandler {
      */
     @SubscribeEvent
     public static void onLivingDamage(LivingDamageEvent.Post event) {
-        if (!(event.getContainer().getSource().getEntity() instanceof ServerPlayer attacker)) return;
+        if (!(event.getSource().getEntity() instanceof ServerPlayer attacker)) return;
 
         PlayerData data = attacker.getData(ModAttachments.PLAYER_DATA.get());
         if (!data.isFightModeActive()) return;
 
-        float baseCharge = (float) (event.getContainer().getNewDamage()
+        float baseCharge = (float) (event.getNewDamage()
             * ModConfig.ULT_CHARGE_PER_DAMAGE.get());
 
         // Apply moveset multiplier if available

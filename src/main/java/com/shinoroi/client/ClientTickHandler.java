@@ -1,6 +1,5 @@
 package com.shinoroi.client;
 
-import com.shinoroi.ShinoRoi;
 import com.shinoroi.core.ModAttachments;
 import com.shinoroi.core.ModKeybinds;
 import com.shinoroi.data.MovesetDefinition;
@@ -10,7 +9,6 @@ import com.shinoroi.network.SelectSlotPacket;
 import com.shinoroi.network.TechniqueActivatePacket;
 import com.shinoroi.network.ToggleFightModePacket;
 import com.shinoroi.registry.MovesetRegistry;
-import net.minecraft.client.CameraType;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -27,19 +25,16 @@ import org.lwjgl.glfw.GLFW;
  *
  * Responsibilities:
  *  - Detect fight-mode toggle keybind -> send ToggleFightModePacket
- *  - Camera switch on fight-mode transitions (first-person <-> third-person back)
- *  - Prevent manual camera cycling while in fight mode
  *  - Scroll wheel interception -> scroll through technique hotbar slots
  *  - Left-click interception -> activate selected technique slot
  *  - Arrow key interception -> forward QTE key press to QteOverlay / server
  *  - Skill tree keybind -> open SkillTreeScreen
  *  - Block render layers (hotbar / selected item name) while fight mode active
  *  - Break-speed modifier (visual)
+ *
+ * Camera is handled entirely by FightCameraPlugin (FreeCamera API).
  */
 public class ClientTickHandler {
-
-    private static boolean wasFightModeActive = false;
-    private static CameraType cameraBeforeFightMode = null;
 
     // -- Player tick ----------------------------------------------------------
 
@@ -61,32 +56,9 @@ public class ClientTickHandler {
             }
         }
 
-        // 3. Camera on fight-mode transition
+        // 3. Left-click -> activate technique (fight mode only)
         PlayerData data = player.getData(ModAttachments.PLAYER_DATA.get());
-        boolean fightModeNow = data.isFightModeActive();
-
-        if (fightModeNow && !wasFightModeActive) {
-            cameraBeforeFightMode = mc.options.getCameraType();
-            mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
-            ShinoRoi.LOGGER.debug("[ShinoRoi] Fight mode ON -- camera -> THIRD_PERSON_BACK");
-        } else if (!fightModeNow && wasFightModeActive) {
-            CameraType restore = (cameraBeforeFightMode != null)
-                ? cameraBeforeFightMode
-                : CameraType.FIRST_PERSON;
-            mc.options.setCameraType(restore);
-            cameraBeforeFightMode = null;
-            ShinoRoi.LOGGER.debug("[ShinoRoi] Fight mode OFF -- camera restored to {}", restore);
-        }
-
-        // Lock camera to third-person while in fight mode
-        if (fightModeNow && mc.options.getCameraType() != CameraType.THIRD_PERSON_BACK) {
-            mc.options.setCameraType(CameraType.THIRD_PERSON_BACK);
-        }
-
-        wasFightModeActive = fightModeNow;
-
-        // 4. Left-click -> activate technique
-        if (fightModeNow && mc.screen == null) {
+        if (data.isFightModeActive() && mc.screen == null) {
             while (mc.options.keyAttack.consumeClick()) {
                 PacketDistributor.sendToServer(
                     new TechniqueActivatePacket(data.getSelectedSlot()));
@@ -105,14 +77,12 @@ public class ClientTickHandler {
         PlayerData data = player.getData(ModAttachments.PLAYER_DATA.get());
         if (!data.isFightModeActive()) return;
 
-        // Suppress vanilla hotbar scroll
-        event.setCanceled(true);
+        event.setCanceled(true); // suppress vanilla hotbar scroll
 
         int maxSlot = resolveMaxSlot(data);
         if (maxSlot <= 0) return;
 
         int current = data.getSelectedSlot();
-        // Scroll down (negative deltaY) = advance to next slot
         int delta = (event.getScrollDeltaY() < 0) ? 1 : -1;
         int next = ((current + delta) % (maxSlot + 1) + (maxSlot + 1)) % (maxSlot + 1);
 
@@ -128,7 +98,6 @@ public class ClientTickHandler {
         if (!QteOverlay.isActive()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen != null) return;
-        // Only fire on key press, not repeat or release
         if (event.getAction() != GLFW.GLFW_PRESS) return;
 
         int direction = -1;

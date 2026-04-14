@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 
 import java.util.*;
 
@@ -12,15 +13,17 @@ import java.util.*;
  * Stored server-side via AttachmentTypes and synced to the client on change.
  *
  * Fields:
- *  - ultBar            : current ult bar charge (0–100)
- *  - fightModeActive   : whether fight mode is toggled on
- *  - rank              : player's current rank (used for skill tree gating)
- *  - selectedSlot      : which hotbar slot is currently selected (0-based)
- *  - skillPoints       : unspent skill points available for unlocks/upgrades
- *  - activeMovesetId   : ID string of the equipped moveset ("" = none)
- *  - cooldowns         : technique id → game tick when cooldown expires
- *  - unlockedTechniques: list of unlocked technique IDs
- *  - upgradeLevels     : technique id → upgrade level (0 = base, unlocked but not upgraded)
+ *  - ultBar             : current ult bar charge (0–100)
+ *  - fightModeActive    : whether fight mode is toggled on
+ *  - rank               : player's current rank (used for skill tree gating)
+ *  - selectedSlot       : which hotbar slot is currently selected (0-based)
+ *  - skillPoints        : unspent skill points available for unlocks/upgrades
+ *  - activeMovesetId    : ID string of the equipped moveset ("" = none)
+ *  - cooldowns          : technique id → game tick when cooldown expires
+ *  - unlockedTechniques : list of unlocked technique IDs
+ *  - upgradeLevels      : technique id → upgrade level (0 = base)
+ *  - storedInventory    : items saved when fight mode is entered (restored on exit)
+ *  - lastToggleTick     : game tick of the last fight-mode toggle (cooldown guard)
  */
 public class PlayerData {
 
@@ -30,22 +33,27 @@ public class PlayerData {
     private int selectedSlot;
     private int skillPoints;
     private String activeMovesetId;
-    /** technique id → game tick when the cooldown expires */
     private final Map<ResourceLocation, Long> cooldowns;
     private final List<ResourceLocation> unlockedTechniques;
-    /** technique id → current upgrade level */
     private final Map<ResourceLocation, Integer> upgradeLevels;
+    /** Items (main 36 + offhand 1) stashed when fight mode is entered. */
+    private final List<ItemStack> storedInventory;
+    /** Server game-tick when fight mode was last toggled (used for cooldown). */
+    private long lastToggleTick;
 
     public PlayerData() {
         this(0f, false, 0, 0, 0, "",
-             new HashMap<>(), new ArrayList<>(), new HashMap<>());
+             new HashMap<>(), new ArrayList<>(), new HashMap<>(),
+             new ArrayList<>(), 0L);
     }
 
     public PlayerData(float ultBar, boolean fightModeActive, int rank,
                       int selectedSlot, int skillPoints, String activeMovesetId,
                       Map<ResourceLocation, Long> cooldowns,
                       List<ResourceLocation> unlockedTechniques,
-                      Map<ResourceLocation, Integer> upgradeLevels) {
+                      Map<ResourceLocation, Integer> upgradeLevels,
+                      List<ItemStack> storedInventory,
+                      long lastToggleTick) {
         this.ultBar = Math.max(0f, Math.min(100f, ultBar));
         this.fightModeActive = fightModeActive;
         this.rank = rank;
@@ -55,6 +63,8 @@ public class PlayerData {
         this.cooldowns = new HashMap<>(cooldowns);
         this.unlockedTechniques = new ArrayList<>(unlockedTechniques);
         this.upgradeLevels = new HashMap<>(upgradeLevels);
+        this.storedInventory = new ArrayList<>(storedInventory);
+        this.lastToggleTick = lastToggleTick;
     }
 
     // ── Codec ────────────────────────────────────────────────────────────────
@@ -72,7 +82,10 @@ public class PlayerData {
             ResourceLocation.CODEC.listOf()
                 .fieldOf("techniques").orElseGet(ArrayList::new).forGetter(PlayerData::getUnlockedTechniques),
             Codec.unboundedMap(ResourceLocation.CODEC, Codec.INT)
-                .fieldOf("upgradeLevels").orElseGet(HashMap::new).forGetter(PlayerData::getUpgradeLevels)
+                .fieldOf("upgradeLevels").orElseGet(HashMap::new).forGetter(PlayerData::getUpgradeLevels),
+            ItemStack.OPTIONAL_CODEC.listOf()
+                .fieldOf("storedInventory").orElseGet(ArrayList::new).forGetter(PlayerData::getStoredInventory),
+            Codec.LONG.fieldOf("lastToggleTick").orElse(0L).forGetter(PlayerData::getLastToggleTick)
         ).apply(instance, PlayerData::new));
 
     public static final Codec<PlayerData> CODEC = MAP_CODEC.codec();
@@ -88,17 +101,15 @@ public class PlayerData {
     public Map<ResourceLocation, Long> getCooldowns() { return Collections.unmodifiableMap(cooldowns); }
     public List<ResourceLocation> getUnlockedTechniques() { return Collections.unmodifiableList(unlockedTechniques); }
     public Map<ResourceLocation, Integer> getUpgradeLevels() { return Collections.unmodifiableMap(upgradeLevels); }
+    public List<ItemStack> getStoredInventory() { return Collections.unmodifiableList(storedInventory); }
+    public long getLastToggleTick() { return lastToggleTick; }
 
     // ── Ult bar ───────────────────────────────────────────────────────────────
 
-    /** Add charge (clamped to 0–100). */
     public void addUltCharge(float amount) {
         this.ultBar = Math.max(0f, Math.min(100f, this.ultBar + amount));
     }
 
-    /**
-     * Attempts to consume ult bar charge. Returns {@code true} and deducts if sufficient.
-     */
     public boolean consumeUlt(float amount) {
         if (ultBar < amount) return false;
         ultBar = Math.max(0f, ultBar - amount);
@@ -115,11 +126,33 @@ public class PlayerData {
         this.fightModeActive = fightModeActive;
     }
 
+    // ── Toggle cooldown ───────────────────────────────────────────────────────
+
+    public void setLastToggleTick(long tick) {
+        this.lastToggleTick = tick;
+    }
+
+    // ── Stored inventory ─────────────────────────────────────────────────────
+
+    /**
+     * Saves a copy of the given item list as the stored inventory.
+     * Call when entering fight mode to preserve the player's items.
+     */
+    public void storeInventory(List<ItemStack> items) {
+        storedInventory.clear();
+        for (ItemStack item : items) {
+            storedInventory.add(item.copy());
+        }
+    }
+
+    /** Clears the stored inventory. Call after restoring items to the player. */
+    public void clearStoredInventory() {
+        storedInventory.clear();
+    }
+
     // ── Rank / skill points ───────────────────────────────────────────────────
 
-    public void setRank(int rank) {
-        this.rank = rank;
-    }
+    public void setRank(int rank) { this.rank = rank; }
 
     public void addSkillPoints(int amount) {
         this.skillPoints = Math.max(0, this.skillPoints + amount);
@@ -170,19 +203,10 @@ public class PlayerData {
         return unlockedTechniques.contains(technique);
     }
 
-    /** Returns current upgrade level, or 0 if not unlocked. */
     public int getUpgradeLevel(ResourceLocation technique) {
         return upgradeLevels.getOrDefault(technique, 0);
     }
 
-    /**
-     * Attempts to upgrade a technique. Returns {@code true} if successful.
-     * Fails if: not unlocked, already at max level, or insufficient skill points.
-     *
-     * @param technique       technique to upgrade
-     * @param maxLevel        max upgrade level from the definition
-     * @param skillPointCost  cost per upgrade
-     */
     public boolean upgradeTechnique(ResourceLocation technique, int maxLevel, int skillPointCost) {
         if (!hasTechnique(technique)) return false;
         int current = getUpgradeLevel(technique);

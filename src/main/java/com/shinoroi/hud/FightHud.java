@@ -19,39 +19,53 @@ import java.util.List;
  * Custom HUD overlay rendered when fight mode is active.
  *
  * Layout:
- *   TOP-CENTER      -- "[ FIGHT MODE ]" indicator
+ *   TOP-CENTER      -- fight mode indicator texture (replace the file to animate)
  *   BOTTOM-CENTER   -- technique hotbar (up to 9 slots, scroll to select, cooldown overlay)
- *   BOTTOM-RIGHT    -- ult bar (vertical, fills bottom-to-top)
+ *   BOTTOM-RIGHT    -- ult bar (vertical, fills bottom-to-top) with background texture
+ *
+ * Textures (editable / animatable):
+ *   assets/shinoroi/textures/hud/fight_mode.png   -- 128x16, rendered top-centre
+ *   assets/shinoroi/textures/hud/ult_bar_bg.png   -- 20x100, rendered behind the ult bar
  */
 public class FightHud {
 
     public static final ResourceLocation ID =
         ResourceLocation.fromNamespaceAndPath(ShinoRoi.MODID, "fight_hud");
 
-    // -- Colour palette -------------------------------------------------------
-    private static final int COLOR_INDICATOR    = 0xFFFF3300;
-    private static final int COLOR_LABEL        = 0xFFFFFFFF;
-    private static final int COLOR_SLOT_BG      = 0xAA000000;
-    private static final int COLOR_SLOT_BORDER  = 0xFF666666;
-    private static final int COLOR_SLOT_SEL     = 0xFFFFCC00;
-    private static final int COLOR_COOLDOWN     = 0xAA000000;
-    private static final int COLOR_ULT_BG       = 0xAA000000;
-    private static final int COLOR_ULT_FILL     = 0xFFAA00FF;
-    private static final int COLOR_ULT_FULL     = 0xFFFF00FF;
-    private static final int COLOR_ULT_LABEL    = 0xFFFFFFFF;
+    // ── HUD textures ──────────────────────────────────────────────────────────
+    private static final ResourceLocation TEX_FIGHT_MODE =
+        ResourceLocation.fromNamespaceAndPath(ShinoRoi.MODID, "textures/hud/fight_mode.png");
+    private static final ResourceLocation TEX_ULT_BAR_BG =
+        ResourceLocation.fromNamespaceAndPath(ShinoRoi.MODID, "textures/hud/ult_bar_bg.png");
 
-    // -- Hotbar geometry ------------------------------------------------------
-    private static final int SLOT_SIZE          = 20;
-    private static final int SLOT_PAD           = 2;
-    private static final int HOTBAR_Y_OFFSET    = 48;
+    // ── Texture dimensions ────────────────────────────────────────────────────
+    private static final int FIGHT_MODE_TEX_W = 128;
+    private static final int FIGHT_MODE_TEX_H = 16;
+    private static final int ULT_BG_TEX_W     = 20;
+    private static final int ULT_BG_TEX_H     = 100;
 
-    // -- Ult bar geometry (bottom-right corner) --------------------------------
-    private static final int ULT_BAR_WIDTH      = 10;
-    private static final int ULT_BAR_HEIGHT     = 80;
-    private static final int ULT_BAR_X_OFFSET   = 16;
-    private static final int ULT_BAR_Y_OFFSET   = 50;
+    // ── Colour palette ────────────────────────────────────────────────────────
+    private static final int COLOR_LABEL       = 0xFFFFFFFF;
+    private static final int COLOR_SLOT_BG     = 0xAA000000;
+    private static final int COLOR_SLOT_BORDER = 0xFF666666;
+    private static final int COLOR_SLOT_SEL    = 0xFFFFCC00;
+    private static final int COLOR_COOLDOWN    = 0xAA000000;
+    private static final int COLOR_ULT_FILL    = 0xFFAA00FF;
+    private static final int COLOR_ULT_FULL    = 0xFFFF00FF;
+    private static final int COLOR_ULT_LABEL   = 0xFFFFFFFF;
 
-    // -- Render ---------------------------------------------------------------
+    // ── Hotbar geometry ───────────────────────────────────────────────────────
+    private static final int SLOT_SIZE       = 20;
+    private static final int SLOT_PAD        = 2;
+    private static final int HOTBAR_Y_OFFSET = 48;
+
+    // ── Ult bar geometry (bottom-right corner) ────────────────────────────────
+    private static final int ULT_BAR_WIDTH    = 10;
+    private static final int ULT_BAR_HEIGHT   = 80;
+    private static final int ULT_BAR_X_OFFSET = 16;
+    private static final int ULT_BAR_Y_OFFSET = 50;
+
+    // ── Render ────────────────────────────────────────────────────────────────
 
     public static void render(GuiGraphics graphics, DeltaTracker deltaTracker) {
         Minecraft mc = Minecraft.getInstance();
@@ -64,18 +78,23 @@ public class FightHud {
         int sw = mc.getWindow().getGuiScaledWidth();
         int sh = mc.getWindow().getGuiScaledHeight();
 
-        renderIndicator(graphics, mc, sw);
+        renderIndicator(graphics, sw);
         renderTechniqueHotbar(graphics, mc, sw, sh, data, player);
         renderUltBar(graphics, sw, sh, data);
     }
 
-    // -- Indicator ------------------------------------------------------------
+    // ── Fight mode indicator (texture) ────────────────────────────────────────
 
-    private static void renderIndicator(GuiGraphics graphics, Minecraft mc, int sw) {
-        graphics.drawCenteredString(mc.font, "[ FIGHT MODE ]", sw / 2, 6, COLOR_INDICATOR);
+    private static void renderIndicator(GuiGraphics graphics, int sw) {
+        int x = sw / 2 - FIGHT_MODE_TEX_W / 2;
+        graphics.blit(TEX_FIGHT_MODE,
+            x, 2,
+            0f, 0f,
+            FIGHT_MODE_TEX_W, FIGHT_MODE_TEX_H,
+            FIGHT_MODE_TEX_W, FIGHT_MODE_TEX_H);
     }
 
-    // -- Technique hotbar -----------------------------------------------------
+    // ── Technique hotbar ──────────────────────────────────────────────────────
 
     private static void renderTechniqueHotbar(GuiGraphics graphics, Minecraft mc,
                                                int sw, int sh, PlayerData data,
@@ -99,14 +118,11 @@ public class FightHud {
             boolean isUnlocked = data.hasTechnique(techId);
             TechniqueDefinition def = TechniqueRegistry.INSTANCE.get(techId);
 
-            // Slot background
             graphics.fill(slotX, slotY, slotX + SLOT_SIZE, slotY + SLOT_SIZE, COLOR_SLOT_BG);
 
-            // Slot border -- gold if selected, grey otherwise
             int borderColor = isSelected ? COLOR_SLOT_SEL : COLOR_SLOT_BORDER;
             drawBorder(graphics, slotX, slotY, SLOT_SIZE, SLOT_SIZE, borderColor);
 
-            // Slot number (1-based)
             graphics.drawString(mc.font, String.valueOf(i + 1), slotX + 2, slotY + 2, COLOR_LABEL, true);
 
             if (!isUnlocked || def == null) {
@@ -115,14 +131,12 @@ public class FightHud {
                 continue;
             }
 
-            // Abbreviated name (first 3 chars)
             String abbrev = def.displayName().length() > 3
                 ? def.displayName().substring(0, 3)
                 : def.displayName();
             graphics.drawCenteredString(mc.font, abbrev,
                 slotX + SLOT_SIZE / 2, slotY + SLOT_SIZE / 2 - 3, COLOR_LABEL);
 
-            // Cooldown overlay
             long remaining = data.getCooldownRemainingTicks(techId, gameTick);
             if (remaining > 0 && def.cooldownTicks() > 0) {
                 float cdRatio = (float) remaining / def.effectiveCooldown(data.getUpgradeLevel(techId));
@@ -136,17 +150,21 @@ public class FightHud {
         }
     }
 
-    // -- Ult bar --------------------------------------------------------------
+    // ── Ult bar ───────────────────────────────────────────────────────────────
 
     private static void renderUltBar(GuiGraphics graphics, int sw, int sh, PlayerData data) {
         int barX = sw - ULT_BAR_X_OFFSET - ULT_BAR_WIDTH;
         int barBottomY = sh - ULT_BAR_Y_OFFSET;
         int barTopY = barBottomY - ULT_BAR_HEIGHT;
 
-        // Background
-        graphics.fill(barX - 1, barTopY - 1,
-                      barX + ULT_BAR_WIDTH + 1, barBottomY + 1,
-                      COLOR_ULT_BG);
+        // Background texture centred behind the bar
+        int bgX = barX - (ULT_BG_TEX_W - ULT_BAR_WIDTH) / 2;
+        int bgY = barBottomY - ULT_BG_TEX_H;
+        graphics.blit(TEX_ULT_BAR_BG,
+            bgX, bgY,
+            0f, 0f,
+            ULT_BG_TEX_W, ULT_BG_TEX_H,
+            ULT_BG_TEX_W, ULT_BG_TEX_H);
 
         // Fill (bottom-to-top)
         float ratio = data.getUltBar() / 100f;
@@ -157,20 +175,14 @@ public class FightHud {
             graphics.fill(barX, fillY, barX + ULT_BAR_WIDTH, barBottomY, fillColor);
         }
 
-        if (ratio >= 1f) {
-            graphics.drawCenteredString(
-                Minecraft.getInstance().font, "ULT",
-                barX + ULT_BAR_WIDTH / 2, barTopY - 10, COLOR_ULT_FULL);
-        }
-
-        // Percentage label below
+        // Percentage label below bar
         String pct = String.format("%d%%", (int) (ratio * 100));
         graphics.drawCenteredString(
             Minecraft.getInstance().font, pct,
             barX + ULT_BAR_WIDTH / 2, barBottomY + 2, COLOR_ULT_LABEL);
     }
 
-    // -- Utility --------------------------------------------------------------
+    // ── Utility ───────────────────────────────────────────────────────────────
 
     private static void drawBorder(GuiGraphics g, int x, int y, int w, int h, int color) {
         g.fill(x, y, x + w, y + 1, color);

@@ -11,4 +11,16 @@ plugins {
     id 'org.gradle.toolchains.foojay-resolver-convention' version '0.8.0'
 }
 
+// NeoForged Gradle 7.x centralises dependency resolution here.
+// Repos declared only in build.gradle are ignored for compileClasspath.
+dependencyResolutionManagement {
+    repositories {
+        mavenLocal()
+        maven {
+            name = "Modrinth"
+            url  = "https://api.modrinth.com/maven"
+        }
+    }
+}
+
 rootProject.name = 'shinoroi'

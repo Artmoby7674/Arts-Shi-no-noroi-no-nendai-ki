@@ -106,11 +106,14 @@ public class SkillTreeScreen extends Screen {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        // Dim background
+        // Render vanilla blur/background FIRST so it stays behind all custom content
+        super.render(graphics, mouseX, mouseY, partialTick);
+
+        // Dim overlay on top of the blur
         graphics.fill(0, 0, width, height, COLOR_BG);
 
         LocalPlayer player = Minecraft.getInstance().player;
-        if (player == null) { super.render(graphics, mouseX, mouseY, partialTick); return; }
+        if (player == null) return;
 
         PlayerData data = player.getData(ModAttachments.PLAYER_DATA.get());
 
@@ -132,13 +135,10 @@ public class SkillTreeScreen extends Screen {
             int cardX = startX + col * (CARD_W + CARD_PAD);
             int cardY = TOP_MARGIN + row * (CARD_H + CARD_PAD) - scrollOffset;
 
-            // Skip cards outside visible area
             if (cardY + CARD_H < 0 || cardY > height) continue;
 
             renderCard(graphics, cards.get(i), data, cardX, cardY, mouseX, mouseY);
         }
-
-        super.render(graphics, mouseX, mouseY, partialTick);
     }
 
     private void renderCard(GuiGraphics graphics, TechniqueCard card, PlayerData data,

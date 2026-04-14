@@ -22,13 +22,25 @@ public final class ModConfig {
     /** Ult bar charge gained per 1 point of damage dealt. Default: 2.0 */
     public static final ModConfigSpec.DoubleValue ULT_CHARGE_PER_DAMAGE;
 
-    // ── Fight-mode HP bonus ──────────────────────────────────────────────────
+    // ── Fight-mode attribute bonuses ─────────────────────────────────────────
 
     /**
-     * Default HP bonus added while fight mode is active (AttributeModifier ADD_VALUE).
-     * Individual movesets can override this per moveset definition.
-     * Default: 20.0 (10 extra hearts)
+     * Armor bonus (ADD_VALUE on Attributes.ARMOR) applied while fight mode is active.
+     * Does not affect max health — purely defensive. Default: 10.0 (5 armor icons).
      */
+    public static final ModConfigSpec.DoubleValue DEFAULT_FIGHT_MODE_ARMOR_BONUS;
+
+    /**
+     * Minimum ticks between fight-mode toggles (anti-spam cooldown).
+     * Default: 100 (5 seconds at 20 TPS).
+     */
+    public static final ModConfigSpec.IntValue TOGGLE_COOLDOWN_TICKS;
+
+    /**
+     * @deprecated No longer used — fight mode now grants armor instead of HP.
+     * Kept so existing config files do not produce unknown-key warnings.
+     */
+    @Deprecated
     public static final ModConfigSpec.DoubleValue DEFAULT_FIGHT_MODE_HP_BONUS;
 
     // ── QTE balance system ───────────────────────────────────────────────────
@@ -73,9 +85,15 @@ public final class ModConfig {
         builder.pop();
 
         builder.comment("Fight mode").push("fightMode");
+        DEFAULT_FIGHT_MODE_ARMOR_BONUS = builder
+            .comment("Armor bonus applied while fight mode is active (ADD_VALUE on Attributes.ARMOR).",
+                     "1 unit = 0.5 armor icons. Default 10 ≈ full iron armor.")
+            .defineInRange("defaultFightModeArmorBonus", 10.0, 0.0, 100.0);
+        TOGGLE_COOLDOWN_TICKS = builder
+            .comment("Minimum ticks between fight-mode toggles (20 ticks = 1 second).")
+            .defineInRange("toggleCooldownTicks", 100, 0, 1200);
         DEFAULT_FIGHT_MODE_HP_BONUS = builder
-            .comment("Default extra max HP (ADD_VALUE) applied while fight mode is active.",
-                     "Individual movesets can override this. 1 unit = 0.5 hearts.")
+            .comment("(Deprecated — no longer applied. Retained for config file compatibility.)")
             .defineInRange("defaultFightModeHpBonus", 20.0, 0.0, 200.0);
         builder.pop();
 

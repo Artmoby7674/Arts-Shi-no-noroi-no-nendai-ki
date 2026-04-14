@@ -23,9 +23,9 @@ import java.util.stream.Collectors;
  */
 public class MovesetRegistry extends SimpleJsonResourceReloadListener {
 
-    public static final MovesetRegistry INSTANCE = new MovesetRegistry();
-
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+
+    public static final MovesetRegistry INSTANCE = new MovesetRegistry();
 
     private final Map<ResourceLocation, MovesetDefinition> movesets = new HashMap<>();
 

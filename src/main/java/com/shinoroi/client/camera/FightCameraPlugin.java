@@ -1,15 +1,9 @@
 package com.shinoroi.client.camera;
 
-// ─────────────────────────────────────────────────────────────────────────────
-// TODO: Replace these four imports with the actual package from your FreeCamera
-//       API dependency.  The class/interface names must stay the same.
-//       Add the dependency in build.gradle (see the TODO there).
-//       Example: import com.example.freecam.api.CameraPlugin;
-// ─────────────────────────────────────────────────────────────────────────────
-import TODO_FREECAM_PKG.annotation.CameraPlugin;
-import TODO_FREECAM_PKG.api.ICameraPlugin;
-import TODO_FREECAM_PKG.api.ICameraModifier;
-import TODO_FREECAM_PKG.api.ModifierPriority;
+import cn.anecansaitin.freecameraapi.api.CameraPlugin;
+import cn.anecansaitin.freecameraapi.api.ICameraModifier;
+import cn.anecansaitin.freecameraapi.api.ICameraPlugin;
+import cn.anecansaitin.freecameraapi.api.ModifierPriority;
 
 import com.shinoroi.core.ModAttachments;
 import com.shinoroi.data.PlayerData;
@@ -17,29 +11,28 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 
 /**
- * FreeCamera plugin that positions the camera at a smooth right-shoulder offset
- * whenever the player is in fight mode.
+ * FreeCamera API plugin that positions the camera at a smooth right-shoulder
+ * offset whenever the player is in fight mode.
  *
- * <p>When fight mode is active the camera lerps to:
- * <ul>
- *   <li>+0.65 blocks right of the player pivot</li>
- *   <li>+0.15 blocks up</li>
- *   <li>4.5 blocks behind (along look direction)</li>
- * </ul>
+ * When fight mode is active the camera lerps to:
+ *  +0.65 blocks right, +0.15 blocks up, 4.5 blocks back (along look direction).
  *
- * <p>When fight mode exits, the offset smoothly returns to zero and the plugin
- * hands control back to the vanilla camera.
+ * When fight mode exits the offset smoothly returns to zero, then the modifier
+ * is disabled so the vanilla camera resumes full control.
  *
- * <p>Registration is automatic via the {@code @CameraPlugin} annotation — no
- * explicit call in {@code ShinoRoi.java} is needed, as long as this class is
- * on the classpath when FreeCamera is present.
+ * Registration is automatic via the @CameraPlugin annotation — no explicit call
+ * in ShinoRoi.java is needed as long as this class is on the classpath when
+ * Free Camera API is present.
+ *
+ * Gradle dependency (update slug/version from modrinth.com/mod/free-camera-api):
+ *   compileOnly "maven.modrinth:free-camera-api:VERSION"
  */
 @CameraPlugin(value = "shinoroi_fight_cam", priority = ModifierPriority.HIGH)
 public class FightCameraPlugin implements ICameraPlugin {
 
     private ICameraModifier modifier;
 
-    // Smoothed current values (lerped each frame)
+    // Smoothed current values (lerped each render frame)
     private float smoothX    = 0f;
     private float smoothY    = 0f;
     private float smoothDist = 4.5f;
@@ -49,7 +42,7 @@ public class FightCameraPlugin implements ICameraPlugin {
     private static final float TARGET_Y    =  0.15f;
     private static final float TARGET_DIST =  4.5f;
 
-    /** How fast the camera slides to/from the target position (per-frame factor). */
+    /** Per-frame lerp speed (frame-rate independent smoothness approximation). */
     private static final float LERP_SPEED = 0.12f;
 
     // ── ICameraPlugin lifecycle ───────────────────────────────────────────────
@@ -57,17 +50,16 @@ public class FightCameraPlugin implements ICameraPlugin {
     @Override
     public void initialize(ICameraModifier modifier) {
         this.modifier = modifier;
-        // Do not call modifier.enable() here — we enable dynamically per-frame.
+        // Start enabled — update() checks fight mode and calls disable() if inactive.
+        modifier.enable();
     }
 
     /**
-     * Called every render frame by the FreeCamera API.
-     * Applies right-shoulder offset when fight mode is active; smoothly resets
-     * when fight mode exits.
-     *
-     * @param partialTick fractional tick progress (0–1)
+     * Called every render frame by the Free Camera API (no parameters — use
+     * Minecraft state for timing if needed).
      */
-    public void update(float partialTick) {
+    @Override
+    public void update() {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null) return;
@@ -76,6 +68,8 @@ public class FightCameraPlugin implements ICameraPlugin {
         boolean fightMode = data.isFightModeActive();
 
         if (fightMode) {
+            modifier.enable();
+
             // Lerp toward right-shoulder position
             smoothX    = lerp(smoothX,    TARGET_X,    LERP_SPEED);
             smoothY    = lerp(smoothY,    TARGET_Y,    LERP_SPEED);
@@ -89,19 +83,21 @@ public class FightCameraPlugin implements ICameraPlugin {
 
         } else {
             // Lerp back to centre; keep applying until effectively zero
-            smoothX    = lerp(smoothX, 0f, LERP_SPEED);
-            smoothY    = lerp(smoothY, 0f, LERP_SPEED);
+            smoothX = lerp(smoothX, 0f, LERP_SPEED);
+            smoothY = lerp(smoothY, 0f, LERP_SPEED);
 
             if (Math.abs(smoothX) > 0.005f || Math.abs(smoothY) > 0.005f) {
+                modifier.enable();
                 modifier
                     .enablePos()
                     .setPos(smoothX, smoothY, 0f)
                     .move(0f, 0f, -smoothDist)
                     .enableObstacle();
             } else {
-                // Fully reset — hand control back to vanilla camera
                 smoothX = 0f;
                 smoothY = 0f;
+                // Fully reset — hand control back to vanilla camera
+                modifier.disable();
             }
         }
     }

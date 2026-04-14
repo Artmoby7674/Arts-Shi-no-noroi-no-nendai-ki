@@ -54,11 +54,9 @@ dependencies {
     // Generates shinoroi.refmap.json so @Shadow/@Inject resolve at runtime
     annotationProcessor "org.spongepowered:mixin:0.8.5:processor"
 
-    // ── Optional: FreeCamera API (right-shoulder camera in fight mode) ────────
-    // TODO: Replace slug and version with the actual FreeCamera mod coordinates.
-    //       Find the slug on the mod's Modrinth page (modrinth.com/mod/<slug>).
-    //       Example:  compileOnly "maven.modrinth:freecam:1.3.2+1.21.1"
-    // compileOnly "maven.modrinth:FREECAM_SLUG:FREECAM_VERSION"
+    // ── Optional: Free Camera API (right-shoulder camera in fight mode) ─────────
+    // Find the correct version for MC 1.21.1 at: https://modrinth.com/mod/free-camera-api
+    // compileOnly "maven.modrinth:free-camera-api:FREECAM_VERSION"
 }
 
 tasks.withType(ProcessResources).configureEach {

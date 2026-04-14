@@ -25,9 +25,9 @@ import java.util.stream.Collectors;
  */
 public class TechniqueRegistry extends SimpleJsonResourceReloadListener {
 
-    public static final TechniqueRegistry INSTANCE = new TechniqueRegistry();
-
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+
+    public static final TechniqueRegistry INSTANCE = new TechniqueRegistry();
 
     private final Map<ResourceLocation, TechniqueDefinition> techniques = new HashMap<>();
 

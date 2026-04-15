@@ -24,3 +24,12 @@ license="${mod_license}"
     versionRange="${minecraft_version_range}"
     ordering="NONE"
     side="BOTH"
+
+# Free Camera API — optional; FightCameraPlugin auto-registers via @CameraPlugin if present.
+# Must load BEFORE shinoroi so the API's class scanner is ready when our plugin is registered.
+[[dependencies.${mod_id}]]
+    modId="free_camera_api"
+    type="optional"
+    versionRange="[3.2.0,)"
+    ordering="BEFORE"
+    side="CLIENT"

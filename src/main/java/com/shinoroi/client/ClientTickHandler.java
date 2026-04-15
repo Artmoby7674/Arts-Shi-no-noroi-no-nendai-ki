@@ -32,7 +32,7 @@ import org.lwjgl.glfw.GLFW;
  *  - Block render layers (hotbar / selected item name) while fight mode active
  *  - Break-speed modifier (visual)
  *
- * Camera is handled entirely by FightCameraPlugin (FreeCamera API).
+ * Camera is handled by FightCameraPlugin (Free Camera API 3.2.0).
  */
 public class ClientTickHandler {
 

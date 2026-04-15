@@ -123,7 +123,7 @@ public class SkillTreeScreen extends Screen {
         graphics.drawCenteredString(font, title, width / 2, 10, COLOR_TITLE);
 
         // ── Skill points ──────────────────────────────────────────────────────
-        graphics.drawString(font, "SP: " + data.getSkillPoints(), 10, height - 14, COLOR_SP, true);
+        graphics.drawString(font, "Pts: " + data.getSkillPoints(), 10, height - 14, COLOR_SP, true);
         graphics.drawString(font, "Rank: " + data.getRank(), 10, height - 24, COLOR_TEXT, true);
         graphics.drawString(font, "[ESC] to close  |  Scroll to browse", width / 2 - 80, height - 14, COLOR_TEXT, false);
 
@@ -162,7 +162,7 @@ public class SkillTreeScreen extends Screen {
             x + 4, y + 16, COLOR_TEXT, false);
 
         // SP cost
-        graphics.drawString(font, "SP: " + def.skillPointCost(), x + 4, y + 26, COLOR_SP, false);
+        graphics.drawString(font, "Pts: " + def.skillPointCost(), x + 4, y + 26, COLOR_SP, false);
 
         // Level indicator
         if (unlocked && def.upgradeLevels() > 0) {

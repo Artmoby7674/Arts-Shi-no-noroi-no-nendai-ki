@@ -9,13 +9,19 @@ import com.shinoroi.core.ModAttachments;
 import com.shinoroi.data.PlayerData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * FreeCamera API plugin that positions the camera at a smooth right-shoulder
  * offset whenever the player is in fight mode.
  *
  * When fight mode is active the camera lerps to:
- *  +0.65 blocks right, +0.15 blocks up, 4.5 blocks back (along look direction).
+ *  +0.6 blocks right (relative to horizontal look direction)
+ *  +0.15 blocks above the player's eye
+ *  2.5 blocks back (horizontal only — never dips underground on steep pitch)
+ *
+ * The back-distance uses only the horizontal (yaw-only) component of the look
+ * direction so the camera stays stable when the player looks up or down.
  *
  * When fight mode exits the offset smoothly returns to zero, then the modifier
  * is disabled so the vanilla camera resumes full control.
@@ -24,25 +30,24 @@ import net.minecraft.client.player.LocalPlayer;
  * in ShinoRoi.java is needed as long as this class is on the classpath when
  * Free Camera API is present.
  *
- * Gradle dependency (update slug/version from modrinth.com/mod/free-camera-api):
- *   compileOnly "maven.modrinth:free-camera-api:VERSION"
+ * Dependency: place free_camera_api-neo-1.21.1-3.2.0.jar in the libs/ folder.
  */
 @CameraPlugin(value = "shinoroi_fight_cam", priority = ModifierPriority.HIGH)
 public class FightCameraPlugin implements ICameraPlugin {
 
     private ICameraModifier modifier;
 
-    // Smoothed current values (lerped each render frame)
-    private float smoothX    = 0f;
-    private float smoothY    = 0f;
-    private float smoothDist = 4.5f;
+    // Smoothed values (lerped each frame). Both start at 0 so the camera
+    // animates in smoothly on the first fight-mode entry.
+    private float smoothX    = 0f;  // right offset (blocks)
+    private float smoothDist = 0f;  // backward distance (blocks)
 
     // Right-shoulder targets
-    private static final float TARGET_X    =  0.65f;
-    private static final float TARGET_Y    =  0.15f;
-    private static final float TARGET_DIST =  4.5f;
+    private static final float TARGET_X    =  0.6f;   // blocks right of horizontal look
+    private static final float TARGET_Y    =  0.15f;  // blocks above eye (constant, not smoothed)
+    private static final float TARGET_DIST =  2.5f;   // blocks back (horizontal only)
 
-    /** Per-frame lerp speed (frame-rate independent smoothness approximation). */
+    /** Per-frame lerp speed (frame-rate independent approximation). */
     private static final float LERP_SPEED = 0.12f;
 
     // ── ICameraPlugin lifecycle ───────────────────────────────────────────────
@@ -50,13 +55,11 @@ public class FightCameraPlugin implements ICameraPlugin {
     @Override
     public void initialize(ICameraModifier modifier) {
         this.modifier = modifier;
-        // Start enabled — update() checks fight mode and calls disable() if inactive.
         modifier.enable();
     }
 
     /**
-     * Called every render frame by the Free Camera API (no parameters — use
-     * Minecraft state for timing if needed).
+     * Called every render frame by the Free Camera API.
      */
     @Override
     public void update() {
@@ -69,40 +72,62 @@ public class FightCameraPlugin implements ICameraPlugin {
 
         if (fightMode) {
             modifier.enable();
-
-            // Lerp toward right-shoulder position
             smoothX    = lerp(smoothX,    TARGET_X,    LERP_SPEED);
-            smoothY    = lerp(smoothY,    TARGET_Y,    LERP_SPEED);
             smoothDist = lerp(smoothDist, TARGET_DIST, LERP_SPEED);
-
-            modifier
-                .enablePos()
-                .setPos(smoothX, smoothY, 0f)
-                .move(0f, 0f, -smoothDist)
-                .enableObstacle();
+            applyShoulderCamera(player);
 
         } else {
-            // Lerp back to centre; keep applying until effectively zero
-            smoothX = lerp(smoothX, 0f, LERP_SPEED);
-            smoothY = lerp(smoothY, 0f, LERP_SPEED);
+            // Lerp back toward centre
+            smoothX    = lerp(smoothX,    0f, LERP_SPEED);
+            smoothDist = lerp(smoothDist, 0f, LERP_SPEED);
 
-            if (Math.abs(smoothX) > 0.005f || Math.abs(smoothY) > 0.005f) {
+            if (Math.abs(smoothX) > 0.005f || Math.abs(smoothDist) > 0.01f) {
                 modifier.enable();
-                modifier
-                    .enablePos()
-                    .setPos(smoothX, smoothY, 0f)
-                    .move(0f, 0f, -smoothDist)
-                    .enableObstacle();
+                applyShoulderCamera(player);
             } else {
-                smoothX = 0f;
-                smoothY = 0f;
-                // Fully reset — hand control back to vanilla camera
+                smoothX    = 0f;
+                smoothDist = 0f;
                 modifier.disable();
             }
         }
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /**
+     * Positions the camera at the right-shoulder offset relative to the
+     * player's eye in world-aligned coordinates.
+     *
+     * The right and back components are derived from the player's horizontal
+     * (yaw-only) look direction so the camera never dips underground when the
+     * player pitches up or down.
+     *
+     *   offset.x = rightX * smoothX  -  fwdX * smoothDist
+     *   offset.y = TARGET_Y
+     *   offset.z = rightZ * smoothX  -  fwdZ * smoothDist
+     *
+     * where (rightX, rightZ) is the unit right vector 90° CW from (fwdX, fwdZ).
+     */
+    private void applyShoulderCamera(LocalPlayer player) {
+        Vec3 look = player.getLookAngle();
+        double hLen = Math.sqrt(look.x * look.x + look.z * look.z);
+
+        // Horizontal forward unit vector (safe fallback when looking straight up/down)
+        double fwdX = hLen > 1e-6 ? look.x / hLen : 0.0;
+        double fwdZ = hLen > 1e-6 ? look.z / hLen : 1.0;
+
+        // Horizontal right = 90° clockwise rotation of forward: (fwdZ, 0, -fwdX)
+        double rX = fwdZ;
+        double rZ = -fwdX;
+
+        float ox = (float)(rX * smoothX - fwdX * smoothDist);
+        float oy = TARGET_Y;
+        float oz = (float)(rZ * smoothX - fwdZ * smoothDist);
+
+        modifier.enablePos()
+                .setPos(ox, oy, oz)
+                .enableObstacle();
+    }
 
     private static float lerp(float current, float target, float factor) {
         return current + (target - current) * factor;

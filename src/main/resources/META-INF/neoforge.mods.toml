@@ -33,3 +33,11 @@ license="${mod_license}"
     versionRange="[3.2.0,)"
     ordering="BEFORE"
     side="CLIENT"
+
+# Curios API — optional; CuriosCompat bridges inventory save/restore for Curios slots.
+[[dependencies.${mod_id}]]
+    modId="curios"
+    type="optional"
+    versionRange="[9.5.0,)"
+    ordering="BEFORE"
+    side="BOTH"

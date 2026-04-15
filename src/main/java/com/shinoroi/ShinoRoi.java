@@ -3,6 +3,7 @@ package com.shinoroi;
 import com.mojang.logging.LogUtils;
 import com.shinoroi.client.ClientSetup;
 import com.shinoroi.client.ClientTickHandler;
+import com.shinoroi.command.ShinoRoiCommand;
 import com.shinoroi.config.ModConfig;
 import com.shinoroi.core.ModAttachments;
 import com.shinoroi.fightmode.FightModeHandler;
@@ -51,7 +52,10 @@ public class ShinoRoi {
         // 4. Server-side fight mode enforcement + reload listeners (game event bus)
         NeoForge.EVENT_BUS.register(FightModeHandler.class);
 
-        // 5. Client-only: keybinds + HUD (mod bus) and tick/render handlers (game bus)
+        // 5. Commands (/shinonoroi skillpoints ...)
+        NeoForge.EVENT_BUS.addListener(ShinoRoiCommand::onRegisterCommands);
+
+        // 6. Client-only: keybinds + HUD (mod bus) and tick/render handlers (game bus)
         //    The dist check ensures client-only classes are never loaded on a server.
         if (FMLEnvironment.dist == Dist.CLIENT) {
             modEventBus.register(ClientSetup.class);

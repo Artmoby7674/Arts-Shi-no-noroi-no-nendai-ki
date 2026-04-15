@@ -124,7 +124,8 @@ public class ClientTickHandler {
         if (!data.isFightModeActive()) return;
 
         if (event.getName().equals(VanillaGuiLayers.HOTBAR)
-                || event.getName().equals(VanillaGuiLayers.SELECTED_ITEM_NAME)) {
+                || event.getName().equals(VanillaGuiLayers.SELECTED_ITEM_NAME)
+                || event.getName().equals(VanillaGuiLayers.ARMOR_LEVEL)) {
             event.setCanceled(true);
         }
     }

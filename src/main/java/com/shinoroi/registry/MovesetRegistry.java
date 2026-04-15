@@ -12,7 +12,6 @@ import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Loads moveset definitions from

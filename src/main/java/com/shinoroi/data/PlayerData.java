@@ -158,6 +158,10 @@ public class PlayerData {
         this.skillPoints = Math.max(0, this.skillPoints + amount);
     }
 
+    public void setSkillPoints(int amount) {
+        this.skillPoints = Math.max(0, amount);
+    }
+
     public boolean spendSkillPoints(int amount) {
         if (skillPoints < amount) return false;
         skillPoints -= amount;

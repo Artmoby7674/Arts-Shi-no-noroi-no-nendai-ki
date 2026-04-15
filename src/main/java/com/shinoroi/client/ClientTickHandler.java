@@ -32,7 +32,7 @@ import org.lwjgl.glfw.GLFW;
  *  - Block render layers (hotbar / selected item name) while fight mode active
  *  - Break-speed modifier (visual)
  *
- * Camera is handled entirely by FightCameraPlugin (FreeCamera API).
+ * Camera shoulder offset is handled by MixinCamera.
  */
 public class ClientTickHandler {
 

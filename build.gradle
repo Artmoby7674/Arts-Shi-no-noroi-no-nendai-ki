@@ -54,8 +54,9 @@ dependencies {
     // Generates shinoroi.refmap.json so @Shadow/@Inject resolve at runtime
     annotationProcessor "org.spongepowered:mixin:0.8.5:processor"
 
-    // Free Camera API: the published MC 1.21 versions (2.x) lack the ICameraPlugin
-    // system. Shoulder camera is now handled by MixinCamera instead.
+    // Free Camera API 3.2.0 — copy free_camera_api-neo-1.21.1-3.2.0.jar into libs/
+    // (Modrinth Maven only publishes the old 2.x builds which lack ICameraPlugin)
+    compileOnly fileTree(dir: 'libs', include: '*.jar')
 }
 
 tasks.withType(ProcessResources).configureEach {

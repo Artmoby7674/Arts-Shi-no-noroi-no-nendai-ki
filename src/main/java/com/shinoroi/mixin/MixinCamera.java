@@ -36,8 +36,9 @@ public class MixinCamera {
     private static final float TARGET_UP    =  0.15f;
     private static final float LERP_SPEED   =  0.12f;
 
-    /** Shadowed so we can call Camera.move() from the inject. */
-    @Shadow
+    // remap = false: same reason as @Inject below — no refMap in production jar,
+    // NeoForge already remapped bytecodes to Mojmap before Mixin runs.
+    @Shadow(remap = false)
     protected void move(double pDistanceOffset, double pVerticalOffset, double pHorizontalOffset) {}
 
     // remap = false: NeoForge 1.21+ uses Mojmap names at runtime; no SRG lookup needed.

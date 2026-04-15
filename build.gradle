@@ -42,8 +42,6 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
     mavenLocal()
-    // Curios API — optional dependency for extended inventory slot support
-    maven { url = "https://maven.theillusivec4.top/" }
 }
 
 dependencies {
@@ -55,9 +53,7 @@ dependencies {
     // Modrinth Maven only publishes old 2.x builds which lack ICameraPlugin.
     // At runtime the JAR must be present in the player's mods/ folder (not bundled here).
     compileOnly fileTree(dir: 'libs', include: '*.jar')
-
-    // Curios API — optional; CuriosCompat is only called when curios is loaded at runtime.
-    compileOnly "top.theillusivec4.curios:curios-neoforge:9.5.1+1.21.1:api"
+    // Curios API: no compile-time dependency needed — CuriosCompat uses reflection only.
 }
 
 tasks.withType(ProcessResources).configureEach {
